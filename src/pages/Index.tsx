@@ -51,26 +51,28 @@ const Index = () => {
       
       console.log("Expected items:", expectedItems);
       
-      toast.info("Loading ViT-B model... This may take a minute on first run.");
+      toast.info("Loading CLIP model... This may take a minute on first run.");
 
-      // Initialize the Vision Transformer Base model
+      // Initialize the CLIP model for zero-shot classification
       const classifier = await pipeline(
-        "image-classification",
-        "google/vit-base-patch16-224"
+        "zero-shot-image-classification",
+        "Xenova/clip-vit-base-patch32"
       );
 
-      toast.info("Running object detection on your image...");
+      toast.info("Analyzing image against your items...");
 
-      // Create URL from uploaded image and run classification
+      // Create URL from uploaded image
       const imageUrl = URL.createObjectURL(selectedImage);
-      const predictions = await classifier(imageUrl, { top_k: 20 });
+      
+      // Use the expected items as candidate labels for CLIP
+      const predictions = await classifier(imageUrl, expectedItems);
       URL.revokeObjectURL(imageUrl);
 
-      console.log("ViT-B Predictions:", predictions);
+      console.log("CLIP Predictions:", predictions);
 
       // Convert predictions to detected objects format
       const detectedObjects = predictions.map((pred: any) => ({
-        name: pred.label.split(",")[0].trim(),
+        name: pred.label,
         confidence: pred.score,
       }));
 
