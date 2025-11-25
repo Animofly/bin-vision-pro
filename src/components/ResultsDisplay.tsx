@@ -1,7 +1,7 @@
-import { CheckCircle2, Package, XCircle, TrendingUp } from "lucide-react";
+import { CheckCircle2, Package, XCircle, TrendingUp, FileImage } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 interface MatchedItem {
   name: string;
@@ -108,9 +108,9 @@ export const ResultsDisplay = ({ detectedObjects }: ResultsDisplayProps) => {
       )}
 
       {/* Summary */}
-      <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+      <Card className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 animate-bin-fill">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-primary/10 rounded-lg">
+          <div className="p-3 bg-primary/10 rounded-lg animate-bin-bounce">
             <TrendingUp className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 grid grid-cols-2 gap-4">
@@ -125,6 +125,15 @@ export const ResultsDisplay = ({ detectedObjects }: ResultsDisplayProps) => {
           </div>
         </div>
       </Card>
+
+      {/* Model Output Button */}
+      <Button 
+        variant="outline" 
+        className="w-full h-12 text-base font-semibold border-primary/30 hover:bg-primary/5 hover:border-primary/50 transition-all animate-bin-wiggle"
+      >
+        <FileImage className="w-5 h-5 mr-2" />
+        Model Output of Bin Photo
+      </Button>
     </div>
   );
 };
