@@ -21,10 +21,22 @@ interface AnalysisResults {
 
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [itemsFile, setItemsFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [detectedItems, setDetectedItems] = useState<MatchedItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Common objects that CLIP can detect
+  const commonObjects = [
+    "laptop", "computer", "monitor", "keyboard", "mouse", "phone", "tablet",
+    "book", "notebook", "pen", "pencil", "paper", "document", "folder",
+    "bottle", "cup", "mug", "glass", "plate", "bowl",
+    "chair", "desk", "table", "lamp", "clock", "calendar",
+    "bag", "backpack", "wallet", "keys", "headphones", "speaker",
+    "camera", "charger", "cable", "remote", "controller",
+    "plant", "flower", "box", "package", "envelope",
+    "tool", "scissors", "tape", "stapler", "calculator",
+    "clothing", "shoe", "hat", "glasses", "watch", "jewelry"
+  ];
 
   const handleAnalyze = async () => {
     if (!selectedImage) {
@@ -32,25 +44,11 @@ const Index = () => {
       return;
     }
 
-    if (!itemsFile) {
-      toast.error("Please upload a text file with items that should be present");
-      return;
-    }
-
     setIsAnalyzing(true);
     setError(null);
-    setResults(null);
+    setDetectedItems([]);
 
     try {
-      // Read the text file content
-      const itemsText = await itemsFile.text();
-      const expectedItems = itemsText
-        .split('\n')
-        .map(item => item.trim())
-        .filter(item => item.length > 0);
-      
-      console.log("Expected items:", expectedItems);
-      
       toast.info("Loading CLIP model... This may take a minute on first run.");
 
       // Initialize the CLIP model for zero-shot classification
@@ -59,47 +57,29 @@ const Index = () => {
         "Xenova/clip-vit-base-patch32"
       );
 
-      toast.info("Analyzing image against your items...");
+      toast.info("Detecting objects in your image...");
 
       // Create URL from uploaded image
       const imageUrl = URL.createObjectURL(selectedImage);
       
-      // Use the expected items as candidate labels for CLIP
-      const predictions = await classifier(imageUrl, expectedItems);
+      // Use common objects as candidate labels for CLIP
+      const predictions = await classifier(imageUrl, commonObjects);
       URL.revokeObjectURL(imageUrl);
 
       console.log("CLIP Predictions:", predictions);
 
-      // Convert predictions to detected objects format
-      const detectedObjects = predictions.map((pred: any) => ({
-        name: pred.label,
-        confidence: pred.score,
-      }));
+      // Filter predictions with confidence > 0.1 and sort by confidence
+      const detected: MatchedItem[] = predictions
+        .filter((pred: any) => pred.score > 0.1)
+        .map((pred: any) => ({
+          name: pred.label,
+          quantity: 1,
+          confidence: pred.score,
+        }))
+        .sort((a: MatchedItem, b: MatchedItem) => b.confidence - a.confidence);
 
-      // Match detected objects with expected items
-      const matched: MatchedItem[] = [];
-      const missing: string[] = [];
-
-      expectedItems.forEach(expectedItem => {
-        const matchingObjects = detectedObjects.filter(
-          obj => obj.name.toLowerCase().includes(expectedItem.toLowerCase()) ||
-                 expectedItem.toLowerCase().includes(obj.name.toLowerCase())
-        );
-
-        if (matchingObjects.length > 0) {
-          const avgConfidence = matchingObjects.reduce((sum, obj) => sum + obj.confidence, 0) / matchingObjects.length;
-          matched.push({
-            name: expectedItem,
-            quantity: matchingObjects.length,
-            confidence: avgConfidence
-          });
-        } else {
-          missing.push(expectedItem);
-        }
-      });
-
-      setResults({ matched, missing });
-      toast.success("Analysis completed successfully!");
+      setDetectedItems(detected);
+      toast.success(`Found ${detected.length} items in the image!`);
     } catch (err) {
       console.error("Analysis error:", err);
       setError(
@@ -113,8 +93,7 @@ const Index = () => {
 
   const handleReset = () => {
     setSelectedImage(null);
-    setItemsFile(null);
-    setResults(null);
+    setDetectedItems([]);
     setError(null);
   };
 
@@ -128,11 +107,10 @@ const Index = () => {
             <span className="text-sm font-medium text-primary">AI-Powered Detection</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-3">
-            Amazon Bin Classifier
+            AI Object Detector
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Upload an image of your bin and let our AI identify all objects inside with
-            precision and speed
+            Upload any image and let our AI identify all objects inside with precision and speed
           </p>
         </header>
 
@@ -143,7 +121,7 @@ const Index = () => {
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-4">
-                  Upload Bin Image
+                  Upload Image
                 </h2>
                 <ImageUpload
                   onImageSelect={setSelectedImage}
@@ -152,45 +130,20 @@ const Index = () => {
                 />
               </div>
 
-              <div>
-                <label
-                  htmlFor="itemsFile"
-                  className="block text-sm font-medium text-foreground mb-2"
-                >
-                  Items That Should Be Present{" "}
-                  <span className="text-destructive">*</span>
-                </label>
-                <div className="flex flex-col gap-2">
-                  <input
-                    id="itemsFile"
-                    type="file"
-                    accept=".txt"
-                    onChange={(e) => setItemsFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 file:cursor-pointer cursor-pointer border border-input rounded-md bg-background"
-                    required
-                  />
-                  {itemsFile && (
-                    <p className="text-sm text-muted-foreground">
-                      Selected: {itemsFile.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-
               <Button
                 onClick={handleAnalyze}
-                disabled={!selectedImage || !itemsFile || isAnalyzing}
+                disabled={!selectedImage || isAnalyzing}
                 className="w-full h-12 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity shadow-soft"
               >
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Analyzing Image...
+                    Detecting Objects...
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Analyze Bin
+                    Detect Objects
                   </>
                 )}
               </Button>
@@ -198,18 +151,56 @@ const Index = () => {
           </Card>
 
           {/* Results Section */}
-          {(results || error) && (
+          {(detectedItems.length > 0 || error) && (
             <Card className="p-6 md:p-8 shadow-card border-border/50">
               {error && <ErrorDisplay message={error} onRetry={handleAnalyze} />}
-              {results && <ResultsDisplay detectedObjects={results} />}
-              {results && (
-                <Button
-                  onClick={handleReset}
-                  variant="outline"
-                  className="w-full mt-6"
-                >
-                  Analyze Another Image
-                </Button>
+              {detectedItems.length > 0 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 pb-4 border-b border-border">
+                    <div className="p-3 bg-primary/10 rounded-lg">
+                      <Sparkles className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        Detected Objects
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Found {detectedItems.length} items in your image
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {detectedItems.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-accent/50 rounded-lg border border-border/50"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground capitalize">
+                            {item.name}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-foreground">
+                              {(item.confidence * 100).toFixed(1)}%
+                            </p>
+                            <p className="text-xs text-muted-foreground">confidence</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    onClick={handleReset}
+                    variant="outline"
+                    className="w-full mt-6"
+                  >
+                    Analyze Another Image
+                  </Button>
+                </div>
               )}
             </Card>
           )}
