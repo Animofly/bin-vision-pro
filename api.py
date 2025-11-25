@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import torch
 import json
 from PIL import Image
+from torchvision import transforms
 import io
 import os
 import urllib.request
@@ -32,8 +33,22 @@ if not os.path.exists(MODEL_PATH) and MODEL_URL:
     except Exception as e:
         print(f"Error downloading model: {e}")
 
+# Build preprocessing pipeline
+def build_preprocess(image_size=224):
+    return transforms.Compose([
+        transforms.Resize(int(image_size / 0.875)),
+        transforms.CenterCrop(image_size),
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=(0.48145466, 0.4578275, 0.40821073),
+            std=(0.26862954, 0.26130258, 0.27577711),
+        ),
+    ])
+
+preprocess = build_preprocess()
+
 try:
-    model = torch.load(MODEL_PATH, map_location=device,weights_only=False)
+    model = torch.load(MODEL_PATH, map_location=device, weights_only=False)
     model.eval()
     print(f"Model loaded successfully on {device}")
 except Exception as e:
@@ -57,7 +72,10 @@ async def analyze_bin(
         image_bytes = await image.read()
         pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         
-        # TODO: Add your preprocessing and model inference logic here
+        # Preprocess image for model
+        image_tensor = preprocess(pil_image).unsqueeze(0).to(device)
+        
+        # TODO: Add your model inference logic here
         # This is a placeholder - replace with your actual model inference
         
         # Example structure of what you should return:
