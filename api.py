@@ -106,6 +106,8 @@ async def analyze_bin(
         
     except Exception as e:
         return {"error": str(e)}, 500
+from fastapi.staticfiles import StaticFiles
+app.mount("/", StaticFiles(directory="../dashboard", html=True), name="static")
 
 if __name__ == "__main__":
     import uvicorn
