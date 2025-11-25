@@ -136,15 +136,6 @@ export const ResultsDisplay = ({ detectedObjects }: ResultsDisplayProps) => {
         </div>
       </Card>
 
-      {/* Model Output Button */}
-      <Button 
-        variant="outline" 
-        className="w-full h-14 text-lg font-bold border-primary/30 hover:bg-gradient-to-r hover:from-primary/5 hover:to-primary/10 hover:border-primary/50 transition-all duration-300 hover:shadow-soft hover:scale-[1.01] animate-fade-in-up"
-        style={{ animationDelay: "0.4s" }}
-      >
-        <FileImage className="w-6 h-6 mr-3" />
-        View Model Output
-      </Button>
     </div>
   );
 };
