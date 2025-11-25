@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -16,7 +15,7 @@ interface DetectedObject {
 
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [objectData, setObjectData] = useState("");
+  const [itemsFile, setItemsFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<DetectedObject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +26,8 @@ const Index = () => {
       return;
     }
 
-    if (!objectData.trim()) {
-      toast.error("Please specify items that should be present");
+    if (!itemsFile) {
+      toast.error("Please upload a text file with items that should be present");
       return;
     }
 
@@ -38,6 +37,10 @@ const Index = () => {
 
     // Simulate API call - replace with your actual model endpoint
     try {
+      // Read the text file content
+      const itemsText = await itemsFile.text();
+      console.log("Items to detect:", itemsText);
+      
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Mock results - replace with actual API response
@@ -62,7 +65,7 @@ const Index = () => {
 
   const handleReset = () => {
     setSelectedImage(null);
-    setObjectData("");
+    setItemsFile(null);
     setResults(null);
     setError(null);
   };
@@ -103,25 +106,32 @@ const Index = () => {
 
               <div>
                 <label
-                  htmlFor="objectData"
+                  htmlFor="itemsFile"
                   className="block text-sm font-medium text-foreground mb-2"
                 >
                   Items That Should Be Present{" "}
                   <span className="text-destructive">*</span>
                 </label>
-                <Textarea
-                  id="objectData"
-                  placeholder="Enter the items that should be present in the bin (e.g., electronics, books, bottles)..."
-                  value={objectData}
-                  onChange={(e) => setObjectData(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                  required
-                />
+                <div className="flex flex-col gap-2">
+                  <input
+                    id="itemsFile"
+                    type="file"
+                    accept=".txt"
+                    onChange={(e) => setItemsFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90 file:cursor-pointer cursor-pointer border border-input rounded-md bg-background"
+                    required
+                  />
+                  {itemsFile && (
+                    <p className="text-sm text-muted-foreground">
+                      Selected: {itemsFile.name}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <Button
                 onClick={handleAnalyze}
-                disabled={!selectedImage || !objectData.trim() || isAnalyzing}
+                disabled={!selectedImage || !itemsFile || isAnalyzing}
                 className="w-full h-12 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity shadow-soft"
               >
                 {isAnalyzing ? (
