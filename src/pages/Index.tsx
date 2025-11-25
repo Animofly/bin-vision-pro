@@ -27,6 +27,11 @@ const Index = () => {
       return;
     }
 
+    if (!objectData.trim()) {
+      toast.error("Please specify items that should be present");
+      return;
+    }
+
     setIsAnalyzing(true);
     setError(null);
     setResults(null);
@@ -101,21 +106,22 @@ const Index = () => {
                   htmlFor="objectData"
                   className="block text-sm font-medium text-foreground mb-2"
                 >
-                  Additional Object Data{" "}
-                  <span className="text-muted-foreground">(Optional)</span>
+                  Items That Should Be Present{" "}
+                  <span className="text-destructive">*</span>
                 </label>
                 <Textarea
                   id="objectData"
-                  placeholder="Enter any additional information about expected objects, categories, or special instructions..."
+                  placeholder="Enter the items that should be present in the bin (e.g., electronics, books, bottles)..."
                   value={objectData}
                   onChange={(e) => setObjectData(e.target.value)}
                   className="min-h-[100px] resize-none"
+                  required
                 />
               </div>
 
               <Button
                 onClick={handleAnalyze}
-                disabled={!selectedImage || isAnalyzing}
+                disabled={!selectedImage || !objectData.trim() || isAnalyzing}
                 className="w-full h-12 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity shadow-soft"
               >
                 {isAnalyzing ? (
