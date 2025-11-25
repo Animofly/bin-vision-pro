@@ -6,6 +6,7 @@ import { ResultsDisplay } from "@/components/ResultsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { pipeline } from "@huggingface/transformers";
 
 interface MatchedItem {
   name: string;
@@ -40,7 +41,6 @@ const Index = () => {
     setError(null);
     setResults(null);
 
-    // Simulate API call - replace with your actual model endpoint
     try {
       // Read the text file content
       const itemsText = await itemsFile.text();
@@ -51,17 +51,28 @@ const Index = () => {
       
       console.log("Expected items:", expectedItems);
       
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast.info("Loading ViT-B model... This may take a minute on first run.");
 
-      // Mock detected objects from image - replace with actual API response
-      const detectedObjects = [
-        { name: "Laptop", confidence: 0.95 },
-        { name: "Laptop", confidence: 0.93 },
-        { name: "Notebook", confidence: 0.87 },
-        { name: "Pen", confidence: 0.82 },
-        { name: "Pen", confidence: 0.80 },
-        { name: "Pen", confidence: 0.79 },
-      ];
+      // Initialize the Vision Transformer Base model
+      const classifier = await pipeline(
+        "image-classification",
+        "google/vit-base-patch16-224"
+      );
+
+      toast.info("Running object detection on your image...");
+
+      // Create URL from uploaded image and run classification
+      const imageUrl = URL.createObjectURL(selectedImage);
+      const predictions = await classifier(imageUrl, { top_k: 20 });
+      URL.revokeObjectURL(imageUrl);
+
+      console.log("ViT-B Predictions:", predictions);
+
+      // Convert predictions to detected objects format
+      const detectedObjects = predictions.map((pred: any) => ({
+        name: pred.label.split(",")[0].trim(),
+        confidence: pred.score,
+      }));
 
       // Match detected objects with expected items
       const matched: MatchedItem[] = [];
@@ -69,7 +80,8 @@ const Index = () => {
 
       expectedItems.forEach(expectedItem => {
         const matchingObjects = detectedObjects.filter(
-          obj => obj.name.toLowerCase() === expectedItem.toLowerCase()
+          obj => obj.name.toLowerCase().includes(expectedItem.toLowerCase()) ||
+                 expectedItem.toLowerCase().includes(obj.name.toLowerCase())
         );
 
         if (matchingObjects.length > 0) {
@@ -87,8 +99,9 @@ const Index = () => {
       setResults({ matched, missing });
       toast.success("Analysis completed successfully!");
     } catch (err) {
+      console.error("Analysis error:", err);
       setError(
-        "Unable to analyze the image. Please check your image quality and try again."
+        err instanceof Error ? err.message : "Unable to analyze the image. Please try again."
       );
       toast.error("Analysis failed");
     } finally {
