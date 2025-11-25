@@ -6,11 +6,11 @@ from PIL import Image
 from torchvision import transforms
 import io
 import os
-import urllib.request
-import gdown
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI()
 
-# Enable CORS
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -19,24 +19,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load your model
+# Model Setup
 MODEL_PATH = "model.pth"
 MODEL_URL = os.getenv("MODEL_URL")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Download model if it doesn't exist and MODEL_URL is provided
 
-
-if not os.path.exists(MODEL_PATH) and MODEL_URL:
-    print(f"Downloading model from {MODEL_URL}...")
+# Download model if missing
+if MODEL_URL and not os.path.exists(MODEL_PATH):
+    import gdown
     try:
+        print(f"Downloading model from {MODEL_URL}")
         gdown.download(MODEL_URL, MODEL_PATH, fuzzy=True)
-        print("Model downloaded successfully")
     except Exception as e:
-        print(f"Error downloading model: {e}")
+        print("Download failed:", e)
 
 
-# Build preprocessing pipeline
+# Preprocessing
 def build_preprocess(image_size=224):
     return transforms.Compose([
         transforms.Resize(int(image_size / 0.875)),
@@ -50,65 +49,69 @@ def build_preprocess(image_size=224):
 
 preprocess = build_preprocess()
 
+# Load model
 try:
-    model = torch.load(MODEL_PATH, map_location=device, weights_only=False)
-    model.eval()
-    print(f"Model loaded successfully on {device}")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    model = None
-
-@app.get("/")
-def root():
-    return {"status": "API is running", "model_loaded": model is not None}
-
-@app.post("/analyze")
-async def analyze_bin(
-    image: UploadFile = File(...),
-    bin_data: str = Form(...)
-):
+    checkpoint = torch.load(MODEL_PATH, map_location=device)
+    model = checkpoint["model_state_dict"]  # if saved as state_dict
+    print("Model loaded successfully")
+except:
     try:
-        # Parse bin data
-        bin_info = json.loads(bin_data)
-        
-        # Read and process image
-        image_bytes = await image.read()
-        pil_image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        
-        # Preprocess image for model
-        image_tensor = preprocess(pil_image).unsqueeze(0).to(device)
-        
-        # TODO: Add your model inference logic here
-        # This is a placeholder - replace with your actual model inference
-        
-        # Example structure of what you should return:
+        model = torch.load(MODEL_PATH, map_location=device)
+        print("Model loaded (full model)")
+    except Exception as e:
+        print("Model failed to load:", e)
+        model = None
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "model_loaded": model is not None}
+
+
+@app.post("/api/analyze")
+async def analyze_bin(image: UploadFile = File(...), bin_data: str = Form(...)):
+    try:
+        info = json.loads(bin_data)
+
+        # Image → Tensor
+        img_bytes = await image.read()
+        pil = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        img_tensor = preprocess(pil).unsqueeze(0).to(device)
+
+        # TODO — actual inference
+        # --------------------------
         results = []
-        
-        for asin, product_data in bin_info.get("BIN_FCSKU_DATA", {}).items():
-            # Run your model inference here
-            # For now, returning mock data - replace with actual model output
-            score = 0.0  # Replace with actual similarity score from model
-            
+        for asin, pdata in info.get("BIN_FCSKU_DATA", {}).items():
             results.append({
                 "asin": asin,
-                "product": product_data.get("normalizedName", product_data.get("name")),
-                "quantity": product_data.get("quantity"),
-                "score": score
+                "product": pdata.get("normalizedName", pdata.get("name")),
+                "quantity": pdata.get("quantity"),
+                "score": 0   # placeholder
             })
-        
-        # Sort by score (highest first)
         results.sort(key=lambda x: x["score"], reverse=True)
-        
-        return {
-            "results": results[:10],  # Return top 10
-            "expected_quantity": bin_info.get("EXPECTED_QUANTITY")
-        }
-        
-    except Exception as e:
-        return {"error": str(e)}, 500
-from fastapi.staticfiles import StaticFiles
-app.mount("/", StaticFiles(directory="../dashboard", html=True), name="static")
+        # --------------------------
 
+        return {
+            "results": results[:10],
+            "expected_quantity": info.get("EXPECTED_QUANTITY")
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ⚡ Serve FRONTEND correctly on Render
+# Render project root: /opt/render/project/src/
+frontend_path = os.path.join(os.path.dirname(__file__), "dashboard")
+
+# If dashboard folder exists, mount it
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+else:
+    print("WARNING: dashboard folder not found:", frontend_path)
+
+
+# Run local
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
