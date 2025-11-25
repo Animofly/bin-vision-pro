@@ -7,7 +7,6 @@ import { ResultsDisplay } from "@/components/ResultsDisplay";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Loader2, Sparkles, Package } from "lucide-react";
 import { toast } from "sonner";
-import { pipeline } from "@huggingface/transformers";
 
 interface ExpectedItem {
   name: string;
@@ -86,46 +85,27 @@ const Index = () => {
     try {
       // Parse expected items from text file
       const expectedItems = await parseTextFile(selectedTextFile);
-      const itemNames = expectedItems.map(item => item.name);
-
-      toast.info("Loading CLIP model... This may take a minute on first run.");
-
-      // Initialize the CLIP model for zero-shot classification
-      const classifier = await pipeline(
-        "zero-shot-image-classification",
-        "Xenova/clip-vit-base-patch32"
-      );
-
-      toast.info("Analyzing bin contents...");
-
-      // Create URL from uploaded image
-      const imageUrl = URL.createObjectURL(selectedImage);
       
-      // Use expected items as candidate labels for CLIP
-      const predictions = await classifier(imageUrl, itemNames) as any[];
-      URL.revokeObjectURL(imageUrl);
-
-      console.log("CLIP Predictions:", predictions);
-
-      // Match detected items with expected items
+      // TODO: Integrate your model here
+      // 1. Load your model
+      // 2. Process the selectedImage
+      // 3. Get predictions for items in expectedItems
+      // 4. Match predictions with expected items
+      
+      toast.info("Analyzing bin contents...");
+      
+      // Example structure - replace with your model's output
       const matched: MatchedItem[] = [];
-      const missing: ExpectedItem[] = [];
-
-      for (const expectedItem of expectedItems) {
-        const detection = predictions.find((pred: any) => pred.label === expectedItem.name);
-        
-        if (detection && detection.score > 0.15) {
-          matched.push({
-            name: expectedItem.name,
-            quantityExpected: expectedItem.quantity,
-            quantityDetected: expectedItem.quantity,
-            confidence: detection.score,
-            present: true
-          });
-        } else {
-          missing.push(expectedItem);
-        }
-      }
+      const missing: ExpectedItem[] = [...expectedItems];
+      
+      // Placeholder: After your model runs, populate matched and missing arrays
+      // matched.push({
+      //   name: "Item Name",
+      //   quantityExpected: 2,
+      //   quantityDetected: 2,
+      //   confidence: 0.95,
+      //   present: true
+      // });
 
       setAnalysisResults({ matched, missing });
       toast.success("Analysis complete!");
