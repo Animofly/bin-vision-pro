@@ -142,28 +142,29 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-bg">
-      <div className="container max-w-5xl mx-auto px-4 py-8 md:py-12">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+      <div className="container max-w-6xl mx-auto px-4 py-8 md:py-16">
         {/* Header */}
-        <header className="text-center mb-12 space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-4">
-            <Package className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">AI-Powered Verification</span>
+        <header className="text-center mb-16 space-y-6 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 rounded-full mb-4 shadow-soft border border-primary/20">
+            <Package className="w-5 h-5 text-primary animate-bin-bounce" />
+            <span className="text-sm font-semibold text-primary tracking-wide">AI-Powered Verification</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-3">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-4 bg-clip-text text-transparent bg-gradient-to-r from-foreground to-primary">
             Bin Content Analyzer
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Verify bin contents against expected items using advanced AI detection
+          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Verify bin contents against expected items using advanced AI detection technology
           </p>
         </header>
 
         {/* Main Content */}
-        <div className="grid gap-6 md:gap-8">
+        <div className="grid gap-8 md:gap-10">
           {/* Input Section */}
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="p-6 shadow-card border-border/50">
-              <h2 className="text-lg font-semibold text-foreground mb-4">
+          <div className="grid lg:grid-cols-2 gap-6 md:gap-8 animate-scale-in">
+            <Card className="p-8 shadow-hover border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-hover bg-card/80 backdrop-blur-sm">
+              <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary" />
                 Bin Image
               </h2>
               <ImageUpload
@@ -185,20 +186,20 @@ const Index = () => {
             </div>
           </div>
 
-          <Card className="p-6 shadow-card border-border/50">
+          <Card className="p-6 shadow-card border-border/50 bg-card/80 backdrop-blur-sm animate-scale-in">
             <Button
               onClick={handleAnalyze}
               disabled={!selectedImage || expectedItems.length === 0 || isAnalyzing}
-              className="w-full h-12 text-base font-semibold bg-gradient-primary hover:opacity-90 transition-opacity shadow-soft"
+              className="w-full h-14 text-lg font-bold bg-gradient-primary hover:shadow-hover transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
                 {isAnalyzing ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
                     Analyzing Bin Contents...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5 mr-2" />
+                    <Sparkles className="w-6 h-6 mr-3" />
                     Analyze Bin
                   </>
               )}
@@ -207,7 +208,7 @@ const Index = () => {
 
           {/* Results Section */}
           {(analysisResults || error) && (
-            <Card className="p-6 md:p-8 shadow-card border-border/50">
+            <Card className="p-8 md:p-10 shadow-hover border-border/50 bg-card/80 backdrop-blur-sm animate-fade-in-up">
               {error && <ErrorDisplay message={error} onRetry={handleAnalyze} />}
               {analysisResults && (
                 <>
@@ -215,7 +216,7 @@ const Index = () => {
                   <Button
                     onClick={handleReset}
                     variant="outline"
-                    className="w-full mt-6"
+                    className="w-full mt-8 h-12 text-base font-semibold hover:bg-primary/5 hover:border-primary/50 transition-all duration-300"
                   >
                     Analyze Another Bin
                   </Button>
