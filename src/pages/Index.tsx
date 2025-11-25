@@ -7,17 +7,22 @@ import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-interface DetectedObject {
+interface MatchedItem {
   name: string;
+  quantity: number;
   confidence: number;
-  category?: string;
+}
+
+interface AnalysisResults {
+  matched: MatchedItem[];
+  missing: string[];
 }
 
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [itemsFile, setItemsFile] = useState<File | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [results, setResults] = useState<DetectedObject[] | null>(null);
+  const [results, setResults] = useState<AnalysisResults | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
@@ -39,19 +44,47 @@ const Index = () => {
     try {
       // Read the text file content
       const itemsText = await itemsFile.text();
-      console.log("Items to detect:", itemsText);
+      const expectedItems = itemsText
+        .split('\n')
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+      
+      console.log("Expected items:", expectedItems);
       
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Mock results - replace with actual API response
-      const mockResults: DetectedObject[] = [
-        { name: "Laptop", confidence: 0.95, category: "Electronics" },
-        { name: "Notebook", confidence: 0.87, category: "Stationery" },
-        { name: "Pen", confidence: 0.82, category: "Stationery" },
-        { name: "Water Bottle", confidence: 0.78, category: "Container" },
+      // Mock detected objects from image - replace with actual API response
+      const detectedObjects = [
+        { name: "Laptop", confidence: 0.95 },
+        { name: "Laptop", confidence: 0.93 },
+        { name: "Notebook", confidence: 0.87 },
+        { name: "Pen", confidence: 0.82 },
+        { name: "Pen", confidence: 0.80 },
+        { name: "Pen", confidence: 0.79 },
       ];
 
-      setResults(mockResults);
+      // Match detected objects with expected items
+      const matched: MatchedItem[] = [];
+      const missing: string[] = [];
+
+      expectedItems.forEach(expectedItem => {
+        const matchingObjects = detectedObjects.filter(
+          obj => obj.name.toLowerCase() === expectedItem.toLowerCase()
+        );
+
+        if (matchingObjects.length > 0) {
+          const avgConfidence = matchingObjects.reduce((sum, obj) => sum + obj.confidence, 0) / matchingObjects.length;
+          matched.push({
+            name: expectedItem,
+            quantity: matchingObjects.length,
+            confidence: avgConfidence
+          });
+        } else {
+          missing.push(expectedItem);
+        }
+      });
+
+      setResults({ matched, missing });
       toast.success("Analysis completed successfully!");
     } catch (err) {
       setError(
