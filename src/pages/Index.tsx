@@ -97,7 +97,11 @@ const Index = () => {
         throw new Error('Analysis failed');
       }
 
-      const results = await response.json();
+      const data = await response.json();
+      console.log("Backend response:", data);
+
+      // Handle different response formats - backend might return array or object
+      const results = Array.isArray(data) ? data : (data.results || data.predictions || []);
 
       // Parse results and match with expected items
       const matched: MatchedItem[] = [];
@@ -105,15 +109,16 @@ const Index = () => {
 
       expectedItems.forEach((item) => {
         const result = results.find((r: any) => 
-          r.product?.toLowerCase() === item.name.toLowerCase()
+          r.product?.toLowerCase() === item.name.toLowerCase() ||
+          r.name?.toLowerCase() === item.name.toLowerCase()
         );
 
-        if (result && result.score > 0.1) {
+        if (result && (result.score > 0.1 || result.confidence > 0.1)) {
           matched.push({
             name: item.name,
             quantityExpected: item.quantity,
             quantityDetected: item.quantity,
-            confidence: result.score,
+            confidence: result.score || result.confidence || 0,
             present: true
           });
         } else {
