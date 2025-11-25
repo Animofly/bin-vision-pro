@@ -38,7 +38,10 @@ serve(async (req) => {
     modelFormData.append('image', image);
     modelFormData.append('bin_data', JSON.stringify(binData));
 
-    const modelResponse = await fetch(modelApiUrl, {
+    // Ensure the URL includes the /analyze endpoint
+    const apiUrl = modelApiUrl.endsWith('/') ? `${modelApiUrl}analyze` : `${modelApiUrl}/analyze`;
+    
+    const modelResponse = await fetch(apiUrl, {
       method: 'POST',
       body: modelFormData,
     });
