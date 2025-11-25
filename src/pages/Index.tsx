@@ -59,26 +59,67 @@ const Index = () => {
     setAnalysisResults(null);
 
     try {
-      // TODO: Integrate your model here
-      // 1. Load your model
-      // 2. Process the selectedImage
-      // 3. Get predictions for items in expectedItems
-      // 4. Match predictions with expected items
-      
       toast.info("Analyzing bin contents...");
-      
-      // Example structure - replace with your model's output
+
+      // Prepare bin data in the format expected by the model
+      const binData: Record<string, any> = {
+        BIN_FCSKU_DATA: {},
+        EXPECTED_QUANTITY: expectedItems.reduce((sum, item) => sum + item.quantity, 0)
+      };
+
+      expectedItems.forEach((item, index) => {
+        const asin = `ASIN_${index}`;
+        binData.BIN_FCSKU_DATA[asin] = {
+          asin: asin,
+          name: item.name,
+          normalizedName: item.name,
+          quantity: item.quantity,
+        };
+      });
+
+      // Send to edge function
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      formData.append('binData', JSON.stringify(binData));
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-bin`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Analysis failed');
+      }
+
+      const results = await response.json();
+
+      // Parse results and match with expected items
       const matched: MatchedItem[] = [];
-      const missing: ExpectedItem[] = [...expectedItems];
-      
-      // Placeholder: After your model runs, populate matched and missing arrays
-      // matched.push({
-      //   name: "Item Name",
-      //   quantityExpected: 2,
-      //   quantityDetected: 2,
-      //   confidence: 0.95,
-      //   present: true
-      // });
+      const missing: ExpectedItem[] = [];
+
+      expectedItems.forEach((item) => {
+        const result = results.find((r: any) => 
+          r.product?.toLowerCase() === item.name.toLowerCase()
+        );
+
+        if (result && result.score > 0.1) {
+          matched.push({
+            name: item.name,
+            quantityExpected: item.quantity,
+            quantityDetected: item.quantity,
+            confidence: result.score,
+            present: true
+          });
+        } else {
+          missing.push(item);
+        }
+      });
 
       setAnalysisResults({ matched, missing });
       toast.success("Analysis complete!");
