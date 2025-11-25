@@ -4,6 +4,8 @@ import torch
 import json
 from PIL import Image
 import io
+import os
+import urllib.request
 
 app = FastAPI()
 
@@ -16,9 +18,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load your model (update the path to your .pth file)
+# Load your model
 MODEL_PATH = "model.pth"
+MODEL_URL = os.getenv("MODEL_URL")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Download model if it doesn't exist and MODEL_URL is provided
+if not os.path.exists(MODEL_PATH) and MODEL_URL:
+    print(f"Downloading model from {MODEL_URL}...")
+    try:
+        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        print("Model downloaded successfully")
+    except Exception as e:
+        print(f"Error downloading model: {e}")
 
 try:
     model = torch.load(MODEL_PATH, map_location=device)
