@@ -7,7 +7,7 @@ from torchvision import transforms
 import io
 import os
 import urllib.request
-
+import gdown
 app = FastAPI()
 
 # Enable CORS
@@ -25,13 +25,16 @@ MODEL_URL = os.getenv("MODEL_URL")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Download model if it doesn't exist and MODEL_URL is provided
+
+
 if not os.path.exists(MODEL_PATH) and MODEL_URL:
     print(f"Downloading model from {MODEL_URL}...")
     try:
-        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        gdown.download(MODEL_URL, MODEL_PATH, fuzzy=True)
         print("Model downloaded successfully")
     except Exception as e:
         print(f"Error downloading model: {e}")
+
 
 # Build preprocessing pipeline
 def build_preprocess(image_size=224):
