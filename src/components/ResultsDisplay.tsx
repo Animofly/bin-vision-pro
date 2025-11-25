@@ -5,13 +5,20 @@ import { Progress } from "@/components/ui/progress";
 
 interface MatchedItem {
   name: string;
-  quantity: number;
+  quantityExpected: number;
+  quantityDetected: number;
   confidence: number;
+  present: boolean;
+}
+
+interface ExpectedItem {
+  name: string;
+  quantity: number;
 }
 
 interface AnalysisResults {
   matched: MatchedItem[];
-  missing: string[];
+  missing: ExpectedItem[];
 }
 
 interface ResultsDisplayProps {
@@ -33,30 +40,33 @@ export const ResultsDisplay = ({ detectedObjects }: ResultsDisplayProps) => {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Package className="w-5 h-5 text-primary" />
-            <h4 className="font-semibold text-foreground">Matched Items</h4>
+            <h4 className="font-semibold text-foreground">Present Items</h4>
             <Badge variant="secondary">{matched.length}</Badge>
           </div>
           <div className="grid gap-3">
             {matched.map((item, idx) => (
               <Card
                 key={idx}
-                className="p-4 hover:shadow-soft transition-all duration-300 border-border/50"
+                className="p-4 hover:shadow-soft transition-all duration-300 border-border/50 bg-primary/5"
               >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-semibold text-foreground">{item.name}</h5>
-                    <Badge className="bg-primary/10 text-primary border-primary/20">
-                      Qty: {item.quantity}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Confidence</span>
-                      <span className="font-medium text-foreground">
-                        {(item.confidence * 100).toFixed(1)}%
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h5 className="font-semibold text-foreground mb-1">{item.name}</h5>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-muted-foreground">
+                        Quantity: <span className="font-medium text-foreground">{item.quantityExpected}</span>
                       </span>
+                      <span className="text-primary font-medium">Present</span>
                     </div>
-                    <Progress value={item.confidence * 100} className="h-2" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground mb-1">Confidence</p>
+                      <p className="text-sm font-semibold text-primary">
+                        {(item.confidence * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
                   </div>
                 </div>
               </Card>
@@ -77,11 +87,19 @@ export const ResultsDisplay = ({ detectedObjects }: ResultsDisplayProps) => {
             {missing.map((item, idx) => (
               <Card
                 key={idx}
-                className="p-3 border-destructive/20 bg-destructive/5"
+                className="p-4 border-destructive/20 bg-destructive/5"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-destructive" />
-                  <span className="text-sm font-medium text-foreground">{item}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-destructive" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Expected quantity: {item.quantity}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-medium text-destructive">Not Found</span>
                 </div>
               </Card>
             ))}
