@@ -90,10 +90,26 @@ export default {
             height: "0",
           },
         },
+        "bin-wiggle": {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(-3deg)" },
+          "75%": { transform: "rotate(3deg)" },
+        },
+        "bin-bounce": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        "bin-fill": {
+          "0%": { transform: "scaleY(0)", transformOrigin: "bottom" },
+          "100%": { transform: "scaleY(1)", transformOrigin: "bottom" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "bin-wiggle": "bin-wiggle 0.5s ease-in-out",
+        "bin-bounce": "bin-bounce 0.6s ease-in-out infinite",
+        "bin-fill": "bin-fill 0.4s ease-out",
       },
     },
   },
