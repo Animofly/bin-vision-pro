@@ -33,7 +33,7 @@ if not os.path.exists(MODEL_PATH) and MODEL_URL:
         print(f"Error downloading model: {e}")
 
 try:
-    model = torch.load(MODEL_PATH, map_location=device)
+    model = torch.load(MODEL_PATH, map_location=device,weights_only=False)
     model.eval()
     print(f"Model loaded successfully on {device}")
 except Exception as e:
