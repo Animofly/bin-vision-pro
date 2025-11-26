@@ -35,24 +35,16 @@ if MODEL_URL and not os.path.exists(MODEL_PATH):
         print("Download failed:", e)
 
 
-# Preprocessing for ONNX
+# Preprocessing for OpenCLIP ONNX
 def preprocess_image(pil_image, image_size=224):
-    """Preprocess PIL image to numpy array for ONNX"""
-    # Resize and center crop
-    pil_image = pil_image.resize((int(image_size / 0.875), int(image_size / 0.875)))
+    """Preprocess PIL image to numpy array for OpenCLIP ONNX inference"""
+    # Resize to 224x224 directly (matching OpenCLIP preprocessing)
+    pil_image = pil_image.resize((image_size, image_size), Image.BICUBIC)
     
-    # Center crop
-    width, height = pil_image.size
-    left = (width - image_size) / 2
-    top = (height - image_size) / 2
-    right = (width + image_size) / 2
-    bottom = (height + image_size) / 2
-    pil_image = pil_image.crop((left, top, right, bottom))
-    
-    # Convert to numpy array and normalize
+    # Convert to numpy array and normalize to [0, 1]
     img_array = np.array(pil_image).astype(np.float32) / 255.0
     
-    # Normalize with ImageNet stats
+    # Normalize with OpenCLIP stats (same as ImageNet)
     mean = np.array([0.48145466, 0.4578275, 0.40821073])
     std = np.array([0.26862954, 0.26130258, 0.27577711])
     img_array = (img_array - mean) / std
