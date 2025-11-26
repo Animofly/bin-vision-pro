@@ -1,8 +1,7 @@
 fastapi
 uvicorn
 python-multipart
-torch
-torchvision
+onnxruntime
 pillow
+numpy
 gdown
--f https://download.pytorch.org/whl/torch_stable.html
